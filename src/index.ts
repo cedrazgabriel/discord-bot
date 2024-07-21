@@ -1,5 +1,5 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { Client, GatewayIntentBits, REST, Routes } from 'discord.js';
+import { Client, Embed, EmbedBuilder, GatewayIntentBits, REST, Routes } from 'discord.js';
 import 'dotenv/config';
 
 const client = new Client({
@@ -14,27 +14,15 @@ const commands = [
     {
         name: 'sugerir-filme',
         description: 'Peça uma sugestão de filme!',
-    },
-    {
-        name: 'sugerir-uhu',
-        description: 'Peça uma sugestão de uhu!',
-    },
-    {
-        name: 'sugerir-desgrama',
-        description: 'Peça uma sugestão de uhu!',
-    },
-    {
-        name: 'sugerir-teste-yasmin',
-        description: 'Peça uma sugestão de uhu!',
-    },
-    {
-        name: 'sugerir-teste-cedraz',
-        description: 'Peça uma sugestão de uhu!',
-    },
-    {
-        name: 'sugerir-teste-final',
-        description: 'Peça uma sugestão de uhu!',
-    },
+        options: [
+            {
+                type: 3, // Tipo "STRING"
+                name: 'genero',
+                description: 'Especifique o gênero do filme',
+                required: false,
+            }
+        ],
+    }
 ];
 
 const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
@@ -42,9 +30,6 @@ const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
 async function registerCommands() {
     try {
         console.log('Started refreshing application (/) commands.');
-
-        // Limpa todos os comandos antigos
-        await rest.put(Routes.applicationCommands(process.env.DISCORD_CLIENT_ID), { body: [] });
 
         // Registra os novos comandos
         await rest.put(Routes.applicationCommands(process.env.DISCORD_CLIENT_ID), { body: commands });
@@ -58,7 +43,7 @@ async function registerCommands() {
 
 async function main() {
 
-    registerCommands();
+    // registerCommands();
 
     const commands = await rest.get(Routes.applicationCommands(process.env.DISCORD_CLIENT_ID));
     console.log(commands);
@@ -73,10 +58,16 @@ async function main() {
     client.on('interactionCreate', async interaction => {
         if (!interaction.isCommand()) return;
 
-        const { commandName } = interaction;
+        const { commandName, options } = interaction;
 
         if (commandName === 'sugerir-filme') {
+
+            await interaction.deferReply();
+
             console.log('Generating content...');
+
+            const genre = options.data.find(option => option.name === 'genero')?.value || "qualquer";
+
             try {
                 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
@@ -84,13 +75,23 @@ async function main() {
                 const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
                 // Correção na forma de chamar o método para gerar conteúdo
-                const prompt = "Me sugira um filme, qualquer um, e não me faça perguntas, só me sugira um filme.";
+                const prompt = `Me sugira um filme de ${genre}, e não me faça perguntas, só me sugira um filme e também onde eu posso assitir, junto com os links do stream onde eu posso assistir. traga também uma imagem do filme para fazer tipo um cartaz`;
+
+                console.log('pediu a ia')
                 const result = await model.generateContent(prompt);
+
+                console.log(result.response.text())
 
                 // Acesso ao texto da resposta
                 const text = result.response.text() || "Desculpe, não consegui sugerir um filme no momento.";
 
-                await interaction.reply(text);
+                const embed = new EmbedBuilder()
+                    .setTitle('Sugestão de Filme')
+                    .setDescription(text)
+                    .setColor('#0099ff');
+
+                await interaction.editReply({ embeds: [embed] });
+
             } catch (error) {
                 console.error('Error generating content:', error);
                 await interaction.reply("Desculpe, ocorreu um erro ao sugerir um filme.");
