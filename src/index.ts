@@ -1,6 +1,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { Client, Embed, EmbedBuilder, GatewayIntentBits, REST, Routes } from 'discord.js';
+import { ChatInputCommandInteraction, Client, Embed, EmbedBuilder, GatewayIntentBits, REST, Routes } from 'discord.js';
 import 'dotenv/config';
+import { executeCommand } from './commands/config/manager';
 
 const client = new Client({
     intents: [
@@ -58,46 +59,17 @@ async function main() {
     client.on('interactionCreate', async interaction => {
         if (!interaction.isCommand()) return;
 
-        const { commandName, options } = interaction;
+        const { commandName } = interaction;
 
-        if (commandName === 'sugerir-filme') {
-
-            await interaction.deferReply();
-
-            console.log('Generating content...');
-
-            const genre = options.data.find(option => option.name === 'genero')?.value || "qualquer";
-
-            try {
-                const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-
-                // Certifique-se de que o método para obter o modelo está correto
-                const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-
-                // Correção na forma de chamar o método para gerar conteúdo
-                const prompt = `Me sugira um filme de ${genre}, e não me faça perguntas, só me sugira um filme e também onde eu posso assitir, junto com os links do stream onde eu posso assistir. traga também uma imagem do filme para fazer tipo um cartaz`;
-
-                console.log('pediu a ia')
-                const result = await model.generateContent(prompt);
-
-                console.log(result.response.text())
-
-                // Acesso ao texto da resposta
-                const text = result.response.text() || "Desculpe, não consegui sugerir um filme no momento.";
-
-                const embed = new EmbedBuilder()
-                    .setTitle('Sugestão de Filme')
-                    .setDescription(text)
-                    .setColor('#0099ff');
-
-                await interaction.editReply({ embeds: [embed] });
-
-            } catch (error) {
-                console.error('Error generating content:', error);
-                await interaction.reply("Desculpe, ocorreu um erro ao sugerir um filme.");
-            }
+        if (interaction instanceof ChatInputCommandInteraction) {
+            const { commandName } = interaction;
+            await executeCommand(commandName, interaction);
+        } else {
+            console.error('Invalid interaction type.');
+            await interaction.reply("Desculpe, tipo de interação inválido para este comando.");
         }
-    });
+    })
+
 
 
 
