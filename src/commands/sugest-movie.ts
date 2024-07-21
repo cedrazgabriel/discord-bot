@@ -1,7 +1,8 @@
 
 import { Command } from './types/base';
 import { ChatInputCommandInteraction } from 'discord.js';
-import { clientGemini } from '../ai/gemini-client';
+import { generateGeminiClient } from '../ai/gemini-client';
+import { generateSugestMoviePrompt } from '../ai/prompts/sugest-filme';
 
 export class SuggestMovieCommand extends Command {
     constructor() {
@@ -16,14 +17,15 @@ export class SuggestMovieCommand extends Command {
 
         const { options } = interaction;
 
-        const genre = options.data.find(option => option.name === 'genero')?.value || "qualquer";
-        const prompt = `Me sugira um filme de ${genre}, e não me faça perguntas, só me sugira um filme.`;
+        const genre = options.data.find(option => option.name === 'genero')?.value?.toString() || "qualquer";
 
         try {
-            const client = clientGemini
+            const client = await generateGeminiClient();
+            const prompt = generateSugestMoviePrompt({ genre });
             const result = await client.generateContent(prompt);
 
             const text = result.response.text() || "Desculpe, não consegui sugerir um filme no momento.";
+
             await interaction.editReply(text);
 
         } catch (error) {
