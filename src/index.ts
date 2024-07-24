@@ -23,6 +23,24 @@ const commands = [
                 required: false,
             }
         ],
+    },
+    {
+        name: 'match-movie',
+        description: 'Diga dois filmes e eu recomendarei um em comum!',
+        options: [
+            {
+                type: 3, // Tipo "STRING"
+                name: 'primeiro-filme',
+                description: 'Diga o primeiro filme',
+                required: true,
+            },
+            {
+                type: 3, // Tipo "STRING"
+                name: 'segundo-filme',
+                description: 'Diga o segundo filme',
+                required: true,
+            }
+        ],
     }
 ];
 
